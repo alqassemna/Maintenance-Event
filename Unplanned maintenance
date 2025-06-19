@@ -1,0 +1,23 @@
+from google.cloud import essential_contacts_v1
+
+def list_contacts(project_id):
+    client = essential_contacts_v1.EssentialContactsServiceClient()
+    parent = f"projects/{project_id}"
+    contacts = client.list_contacts(parent=parent)
+    for contact in contacts:
+        print(f"Email: {contact.email}, Categories: {contact.notification_category_subscriptions}")
+
+def create_contact(project_id, email):
+    client = essential_contacts_v1.EssentialContactsServiceClient()
+    parent = f"projects/{project_id}"
+    contact = essential_contacts_v1.Contact(
+        email=email,
+        notification_category_subscriptions=["ALL"],
+        language_tag="en"
+    )
+    response = client.create_contact(parent=parent, contact=contact)
+    print(f"Created contact: {response.email}")
+
+# Example usage:
+# list_contacts('your-gcp-project-id')
+# create_contact('your-gcp-project-id', 'alqassemnasr5@gmail.com')
