@@ -1,0 +1,70 @@
+def __init__(self, event_type, region, device_location_tz, start_datetime, duration_hours):
+def __init__(self, event_type, region, device_location_tz, start_datetime, duration_hours):
+    if event_type not in ["planned", "physical_migration"]:
+        raise ValueError(f"Invalid event_type: {event_type}")
+    if duration_hours <= 0:
+        raise ValueError("Duration must be positive")
+    if not start_datetime.tzinfo:
+        raise ValueError("start_datetime must be timezone-aware")
+    
+    self.event_type = event_type
+    self.region = region
+    self.device_location_tz = device_location_tz
+    self.start_datetime = start_datetime
+    self.duration_hours = duration_hours
+def is_active(self, check_time=None):
+    """Check if maintenance is currently active"""
+    if check_time is None:
+        check_time = datetime.now(self.device_location_tz)
+    end_time = self.start_datetime + timedelta(hours=self.duration_hours)
+    return self.start_datetime <= check_time <= end_time
+
+def time_until_start(self):
+    """Get time until maintenance starts"""
+    now = datetime.now(self.device_location_tz)
+    if now >= self.start_datetime:
+        return timedelta(0)
+    return self.start_datetime - now
+
+def get_end_datetime(self):
+    """Get the end datetime of the maintenance"""
+    return self.start_datetime + timedelta(hours=self.duration_hours)
+@staticmethod
+def default_window(event_type, region, target_date=None):
+    """Returns the default window for the event_type and region."""
+    if target_date is None:
+        target_date = datetime.now().date()
+    
+    if event_type == "planned":
+        tz = get_region_timezone(region)
+        start = tz.localize(datetime.combine(target_date, time(22, 0)))
+        end = tz.localize(datetime.combine(target_date + timedelta(days=1), time(5, 0)))
+        return (start, end)
+    elif event_type == "physical_migration":
+        tz = pytz.timezone('US/Eastern')
+        # Ensure it's a weekday
+        while target_date.weekday() > 4:  # 0-4 is Mon-Fri
+            target_date += timedelta(days=1)
+        start = tz.localize(datetime.combine(target_date, time(9, 0)))
+        end = tz.localize(datetime.combine(target_date, time(17, 0)))
+        return (start, end)
+    else:
+        raise ValueError(f"Unknown event type: {event_type}")
+def get_region_timezone(region):
+    region_map = {
+        "asia-south1": "Asia/Kolkata",
+        "asia-southeast1": "Asia/Singapore",
+        "europe-west1": "Europe/London",
+        "europe-west2": "Europe/London",
+        "us-central1": "US/Central",
+        "us-east1": "US/Eastern",
+        "us-west1": "US/Pacific",
+        "us-west2": "US/Pacific",
+        "australia-southeast1": "Australia/Sydney",
+    }
+    return pytz.timezone(region_map.get(region, "UTC"))
+from enum import Enum
+
+class EventType(Enum):
+    PLANNED = "planned"
+    PHYSICAL_MIGRATION = "physical_migration"
