@@ -1,0 +1,115 @@
+from enum import Enum
+
+class EventType(Enum):
+    PLANNED = "planned"
+    PHYSICAL_MIGRATION = "physical_migration"
+    UNPLANNED = "unplanned"  # New type
+@staticmethod
+def default_window(event_type, region, target_date=None):
+    """Returns the default window for the event_type and region."""
+    if target_date is None:
+        target_date = datetime.now().date()
+    
+    if event_type == "planned":
+        tz = get_region_timezone(region)
+        start = tz.localize(datetime.combine(target_date, time(22, 0)))
+        end = tz.localize(datetime.combine(target_date + timedelta(days=1), time(5, 0)))
+        return (start, end)
+    elif event_type == "physical_migration":
+        tz = pytz.timezone('US/Eastern')
+        while target_date.weekday() > 4:  # Ensure weekday
+            target_date += timedelta(days=1)
+        start = tz.localize(datetime.combine(target_date, time(9, 0)))
+        end = tz.localize(datetime.combine(target_date, time(17, 0)))
+        return (start, end)
+    elif event_type == "unplanned":
+        # Unplanned maintenance starts immediately
+        tz = get_region_timezone(region)
+        start = datetime.now(tz)
+        # Default duration could be shorter, e.g., 2 hours
+        end = start + timedelta(hours=2)
+        return (start, end)
+    else:
+        raise ValueError(f"Unknown event type: {event_type}")
+class MaintenanceEvent:
+    # ... existing code ...
+    
+    @classmethod
+    def create_unplanned(cls, region, estimated_duration_hours=2, reason=None):
+        """Create an unplanned maintenance event starting immediately"""
+        tz = get_region_timezone(region)
+        start_time = datetime.now(tz)
+        
+        event = cls(
+            event_type="unplanned",
+            region=region,
+            device_location_tz=tz,
+            start_datetime=start_time,
+            duration_hours=estimated_duration_hours
+        )
+        event.reason = reason  # Optional reason for the outage
+        return event
+    
+    def extend_duration(self, additional_hours):
+        """Extend the maintenance window (common for unplanned events)"""
+        self.duration_hours += additional_hours
+        return self
+    
+    def is_emergency(self):
+        """Check if this is an emergency/unplanned maintenance"""
+        return self.event_type == "unplanned"
+def __init__(self, event_type, region, device_location_tz, start_datetime, duration_hours):
+    valid_types = ["planned", "physical_migration", "unplanned"]
+    if event_type not in valid_types:
+        raise ValueError(f"Invalid event_type: {event_type}. Must be one of {valid_types}")
+    
+    # For unplanned maintenance, allow very short notice
+    if event_type != "unplanned":
+        # Add validation for planned events (e.g., must be scheduled in advance)
+        if start_datetime <= datetime.now(start_datetime.tzinfo):
+            raise ValueError("Planned maintenance must be scheduled in the future")
+    
+    # ... rest of validation
+def __str__(self):
+    event_name = self.event_type.replace('_', ' ').title()
+    if self.event_type == "unplanned":
+        return f"🚨 {event_name} maintenance in {self.region} - {self.event_window()}"
+    else:
+        return f"{event_name} maintenance in {self.region} - {self.event_window()}"
+# Unplanned maintenance example
+if __name__ == "__main__":
+    # Emergency maintenance in us-west1
+    emergency = MaintenanceEvent.create_unplanned(
+        region="us-west1",
+        estimated_duration_hours=3,
+        reason="Database server failure"
+    )
+    print(emergency)
+    
+    # Extend if needed
+    emergency.extend_duration(1)  # Add 1 more hour
+    print(f"Extended: {emergency}")
+    
+    # Check if it's emergency
+    print(f"Is emergency: {emergency.is_emergency()}")
+class MaintenanceEvent:
+    def __init__(self, event_type, region, device_location_tz, start_datetime, duration_hours):
+        # ... existing code ...
+        self.reason = None  # For unplanned events
+        self.severity = "low"  # low, medium, high, critical
+        self.affected_services = []  # List of affected services
+        self.estimated_recovery = None  # For unplanned events
+    
+    def set_severity(self, severity):
+        """Set severity level for unplanned maintenance"""
+        valid_severities = ["low", "medium", "high", "critical"]
+        if severity not in valid_severities:
+            raise ValueError(f"Severity must be one of {valid_severities}")
+        self.severity = severity
+        return self
+    
+    def add_affected_service(self, service_name):
+        """Add a service affected by this maintenance"""
+        if service_name not in self.affected_services:
+            self.affected_services.append(service_name)
+        return self
