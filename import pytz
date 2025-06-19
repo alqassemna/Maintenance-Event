@@ -1,0 +1,77 @@
+from datetime import datetime, time, timedelta
+import pytz
+
+class MaintenanceEvent:
+    def __init__(self, event_type, region, device_location_tz, start_datetime, duration_hours):
+        self.event_type = event_type  # "planned" or "physical_migration"
+        self.region = region
+        self.device_location_tz = device_location_tz  # pytz timezone object
+        self.start_datetime = start_datetime  # datetime object (timezone-aware)
+        self.duration_hours = duration_hours
+
+    def event_window(self):
+        end_time = self.start_datetime + timedelta(hours=self.duration_hours)
+        return f"{self.start_datetime.strftime('%Y-%m-%d %H:%M %Z')} to {end_time.strftime('%Y-%m-%d %H:%M %Z')}"
+
+    @staticmethod
+    def default_window(event_type, region):
+        """
+        Returns the default window for the event_type and region.
+        """
+        if event_type == "planned":
+            # Most planned maintenance happens 10 PM - 5 AM local
+            tz = get_region_timezone(region)
+            today = datetime.now(tz).date()
+            start = tz.localize(datetime.combine(today, time(22, 0)))  # 10 PM
+            end = tz.localize(datetime.combine(today + timedelta(days=1), time(5, 0)))  # 5 AM next day
+            return (start, end)
+        elif event_type == "physical_migration":
+            # Physical migration: Mon-Fri 9am-5pm ET
+            tz = pytz.timezone('US/Eastern')
+            today = datetime.now(tz).date()
+            start = tz.localize(datetime.combine(today, time(9, 0)))
+            end = tz.localize(datetime.combine(today, time(17, 0)))
+            return (start, end)
+        else:
+            raise ValueError("Unknown event type")
+
+    def __str__(self):
+        return f"{self.event_type.replace('_', ' ').title()} maintenance in {self.region} at {self.event_window()}"
+
+def get_region_timezone(region):
+    # Simple mapping for demonstration. Extend as needed.
+    region_map = {
+        "asia-south1": "Asia/Kolkata",  # IST (UTC+5:30)
+        "us-east1": "US/Eastern",
+        "us-west1": "US/Pacific",
+        # Add more as needed
+    }
+    return pytz.timezone(region_map.get(region, "UTC"))
+
+# Example usage:
+if __name__ == "__main__":
+    # Planned maintenance in asia-south1
+    region = "asia-south1"
+    tz = get_region_timezone(region)
+    planned_start, planned_end = MaintenanceEvent.default_window("planned", region)
+    event1 = MaintenanceEvent(
+        event_type="planned",
+        region=region,
+        device_location_tz=tz,
+        start_datetime=planned_start,
+        duration_hours=7  # 10 PM to 5 AM is 7 hours
+    )
+    print(event1)
+
+    # Physical migration in us-east1
+    region = "us-east1"
+    tz = get_region_timezone(region)
+    phys_start, phys_end = MaintenanceEvent.default_window("physical_migration", region)
+    event2 = MaintenanceEvent(
+        event_type="physical_migration",
+        region=region,
+        device_location_tz=tz,
+        start_datetime=phys_start,
+        duration_hours=8  # 9 AM to 5 PM is 8 hours
+    )
+    print(event2)
