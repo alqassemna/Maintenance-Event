@@ -1,0 +1,32 @@
+# Replace INTERCONNECT_NAME with your Interconnect's name
+gcloud compute interconnects describe INTERCONNECT_NAME
+expectedOutages:
+- description: ''
+  endTime: '1705520100000'
+  issueType: IT_OUTAGE
+  name: pcr-764913
+  source: NSRC_GOOGLE
+  startTime: '1705501500000'
+  state: CANCELLED
+GET https://compute.googleapis.com/compute/v1/projects/PROJECT_ID/global/interconnects/INTERCONNECT_NAME
+{
+  ...
+  "expectedOutages": [
+    {
+      "description": "",
+      "endTime": "1705520100000",
+      "issueType": "IT_OUTAGE",
+      "name": "pcr-764913",
+      "source": "NSRC_GOOGLE",
+      "startTime": "1705501500000",
+      "state": "CANCELLED"
+    }
+  ],
+  ...
+}
+gcloud essential-contacts contacts list --project=PROJECT_ID
+gcloud essential-contacts contacts create \
+  --project=PROJECT_ID \
+  --email=alqassemnasr5@gmail.com \
+  --notification-categories=ALL \
+  --language=en
